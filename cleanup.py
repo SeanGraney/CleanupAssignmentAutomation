@@ -1,6 +1,13 @@
+from __future__ import print_function
 import gspread
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient import discovery
 from pprint import pprint
 import time
 import random
@@ -12,6 +19,7 @@ start = time.time()
 # Google API Information
 ###################################################################################################################
 
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 scope = [
     "https://spreadsheets.google.com/feeds",
@@ -22,12 +30,14 @@ scope = [
 
 credentials = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client = gspread.authorize(credentials)
+service = discovery.build('sheets', 'v4', credentials=ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope))
 SPREADSHEET_ID = "1SuAeUZZhKQ67_79u-bueBVqG_B94l6Dz7fGdkQq0m2o"
 
 sheet = client.open("Database").worksheet("Data")
 sheet1 = client.open("Database").worksheet("Number_Assigned")
 dbData = sheet.get_all_records()
 naData = sheet1.get_all_records()
+
 
 # convert the json to dataframe
 records_df = pd.DataFrame.from_dict(dbData)
@@ -216,12 +226,13 @@ def captainSelect(finalList):
 
 
 def update_Db():
-    new_data = [5, 22, 6]
-    sheet3=sheet.active 
+    vrange = {"dog": 5, "Cat": 6}
+    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range="A1", valueInputOption='USER_ENTERED', body=vrange)
+    response = request.execute()
+    print(response)
     
-    for row in sheet3['A1:U1']:
-        for index, cell in enumerate(row):
-            cell.value = new_data[index]
+
+    
 
 def update_local_db(cleanup, finalList):
     for x in finalList:

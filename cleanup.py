@@ -90,12 +90,15 @@ def heap():
             finalList = select_brothers(cleanup)
             update_local_db(cleanup, finalList)
             remove_names(finalList)
+
+            #####Testing####
+
+            print(cleanup)
+            print("Assigned Cleanups" +str(finalList))
+
         count=count+1
 
-        #####Testing####
-
-            # print(cleanup)
-            # print("Assigned Cleanups" +str(finalList))
+       
 
 
 
@@ -175,6 +178,7 @@ def index_of(cleanup, name):
 def randomizer(numberAssigned, pBrothersList):
     distinct = -1
     bLength = len(pBrothersList)
+    offset = -1
 
     # find number of distinct values
     for x in range(bLength):
@@ -188,16 +192,27 @@ def randomizer(numberAssigned, pBrothersList):
         return pBrothersList
 
     # if the list holds more than the perfect amount and all values are equal, 
-    # randomly remove loose ends
+    # randomly remove loose ends, not the townsmen
     elif (bLength > numberAssigned) and distinct == 1:
-        while len(pBrothersList) > numberAssigned:    
-            del pBrothersList[random.randint(0,len(pBrothersList)-1)]
+        while len(pBrothersList) > numberAssigned:
+            rand = random.randint(0,len(pBrothersList)-1)
+            if personal_data("Deck", [pBrothersList[rand][1]]) != "T": 
+                del pBrothersList[rand]
         return pBrothersList
-    # otherwise, del values off the end
+
+    # otherwise, del values off the end, not the townsmen
     else:
         while len(pBrothersList) > numberAssigned:
-            del pBrothersList[-1]
+            if personal_data("Deck", pBrothersList[offset]) != "T":
+                del pBrothersList[offset]
+            else:
+                offset = offset-1
         return pBrothersList
+
+
+# select single townsmen for cleanup
+def select_townsmen(tList):
+
 
 
 
@@ -224,13 +239,38 @@ def captainSelect(finalList):
 ###################################################################################################################
 
 
-
+# updates datebase with new values
 def update_Db():
-    vrange = {"dog": 5, "Cat": 6}
-    request = service.spreadsheets().values().update(spreadsheetId=SPREADSHEET_ID, range="A1", valueInputOption='USER_ENTERED', body=vrange)
-    response = request.execute()
-    print(response)
     
+    # cell values to update
+    values = []
+
+    # populates values list with new data and appends it
+    for x in dbData:
+        tempList = []
+        for y in x.items():
+            tempList.append(y[1])
+        values.append(tempList)
+
+
+    # set data range
+    data = [
+        {
+            "range": "A2",
+            "values": values
+        }
+    ]
+    
+    # base info
+    body = {
+        "valueInputOption": "USER_ENTERED",
+        'data': data
+    }
+
+    # request to google to fill the sheets
+    request = service.spreadsheets().values().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
+   
+    # print('{0} cells updated.'.format(request.get("totalUpdatedCells"))) --- Testing
 
     
 
@@ -267,12 +307,22 @@ def remove_names(finalList):
 def select_brothers(cleanup):
     cleanSort = Min_Heap()
     cleanupAssignments = []
-    townsmen = 0
+    townsmen = []
+
 
    # adds all memberst of mutable tuple to the Heap
-    for x in masterDict[cleanup]:  
-        cleanSort.add(x)
+    for x in masterDict[cleanup]: 
+        if personal_data("Deck", x[0]) == "T":
+            townsmen.append(x)
+        else:
+            cleanSort.add(x)
     
+
+
+    
+
+
+    # get potential list of brothers for cleanup
     while True:
         # populate array as long as their last cleanup wasn't the current
         if cleanup == personal_data("Last", cleanSort.peek()[0]):
@@ -281,17 +331,16 @@ def select_brothers(cleanup):
         # makes sure there is no more than one townsmen per cleanup and they can't be the only brother on that cleanup
         if "T" == personal_data("Deck", cleanSort.peek()[0]):
             townsmen = townsmen+1          
-            if numberAssigned[cleanup] == 1 or townsmen > 1:
+            if numberAssigned[cleanup] == 1 or townsmen > 1 or cleanup == "Brojo/Brolo" or cleanup == "Study/Laundry":
                 cleanSort.pop()
                 continue
         cleanupAssignments.append(cleanSort.pop())
-
-        # break loop if the list is the size of the desired cleanp size and all edge duplicates are accounted for
-        if len(cleanupAssignments) >= numberAssigned[cleanup] and cleanupAssignments[-1][1] != cleanSort.peek()[1]:
+            # break loop if the list is the size of the desired cleanp size and all edge duplicates are accounted for
+        if (len(cleanupAssignments) >= numberAssigned[cleanup] and cleanupAssignments[-1][1] != cleanSort.peek()[1]): 
             break
 
     # Make random selection
-    return randomizer(numberAssigned[cleanup], cleanupAssignments)
+    return randomizer(numberAssigned[cleanup], cleanupAssignments, cleanup)
 
 
 
@@ -336,6 +385,8 @@ class Min_Heap:
 
 
     def peek(self):
+        if len(self.data) == 0:
+            return "empty"
         return self.data[0]
 
     def add(self, lst):

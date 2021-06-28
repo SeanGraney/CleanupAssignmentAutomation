@@ -1,5 +1,0 @@
-Name: SkullsCleanup
-Email: skullscleanup@skulls-cleanups.iam.gserviceaccount.com
-Unique ID: 109036101787482863351
-
-Client ID: 109036101787482863351

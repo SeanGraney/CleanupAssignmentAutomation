@@ -28,9 +28,9 @@ scope = [
     "https://www.googleapis.com/auth/drive"
     ]
 
-credentials = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name(".keys\credentials.json", scope)
 client = gspread.authorize(credentials)
-service = discovery.build('sheets', 'v4', credentials=ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope))
+service = discovery.build('sheets', 'v4', credentials=ServiceAccountCredentials.from_json_keyfile_name(".keys\credentials.json", scope))
 SPREADSHEET_ID = "1SuAeUZZhKQ67_79u-bueBVqG_B94l6Dz7fGdkQq0m2o"
 
 sheet = client.open("Database").worksheet("Data")
@@ -54,17 +54,18 @@ cleanupProperties = []
 masterDict = {}
 staticDict = {}
 numberAssigned = {}
+townsmenEligibilty = {}
 
 ###################################################################################################################
-# Main Functions
+# Main FunctionsS
 ###################################################################################################################
 
 
 
 def main():
     read()
-    heap()
-    write()
+    # heap()
+    # write()
     end = time.time()
     print("Your Program took: " +str(end-start)+ " Seconds")    
 
@@ -74,7 +75,8 @@ def read():
     set_brother_names()
     set_cleanups()
     set_master_dict()
-    set_number_ssigned()
+    set_number_assigned()
+    set_townsmen_elig()
 
 
 
@@ -146,10 +148,17 @@ def set_cleanups():
 
 
 # appends the Number Assigned dict which holds the number of brothers each cleanup will be assigned
-def set_number_ssigned():
+def set_number_assigned():
     for x in range(len(naData)):
         numberAssigned[naData[x]['Cleanup']] = naData[x]["Number"]
 
+
+
+# set the townsmen eligability dict {cleanup: Y/N, ...}
+def set_townsmen_elig():
+    for x in range(len(naData)):
+        townsmenEligibilty[naData[x]["Cleanup"]] = naData[x]["Townsmen Eligible"]
+    print(townsmenEligibilty)
 
 
 # pass cleanup and name and return val
@@ -203,16 +212,8 @@ def randomizer(numberAssigned, pBrothersList):
     # otherwise, del values off the end, not the townsmen
     else:
         while len(pBrothersList) > numberAssigned:
-            if personal_data("Deck", pBrothersList[offset]) != "T":
-                del pBrothersList[offset]
-            else:
-                offset = offset-1
+            del pBrothersList[-1]
         return pBrothersList
-
-
-# select single townsmen for cleanup
-def select_townsmen(tList):
-
 
 
 
@@ -301,13 +302,20 @@ def remove_names(finalList):
 # Min Heap implementation and Sorting functions
 ###################################################################################################################
 
-
+def populate_heap(cleanup, partialList, heap):
+    pass
 
 #  cleanup assignments list
 def select_brothers(cleanup):
-    cleanSort = Min_Heap()
-    cleanupAssignments = []
+    assigned = []
+
+    inhouse = Min_Heap()
+    outhouse = Min_Heap()
     townsmen = []
+    housemen = []
+
+    numHousemen = 0
+    numTownsmen = 0
 
 
    # adds all memberst of mutable tuple to the Heap
@@ -315,12 +323,20 @@ def select_brothers(cleanup):
         if personal_data("Deck", x[0]) == "T":
             townsmen.append(x)
         else:
-            cleanSort.add(x)
+            housemen.append(x)
     
 
+    # decide how many townsmen and brothers for that cleanup
 
+    # 
+    if len(townsmen) > 0:
+        if len(townsmen) < len(townsmenEligibilty) - len(townsmenEligibilty[]):
+            numTownsmen = 1
+        else:
+            numTownsmen = len(townsmen)%len(townsmenEligibilty)
     
-
+    
+    numHousemen = numberAssigned[cleanup]-numTownsmen
 
     # get potential list of brothers for cleanup
     while True:
@@ -342,6 +358,25 @@ def select_brothers(cleanup):
     # Make random selection
     return randomizer(numberAssigned[cleanup], cleanupAssignments, cleanup)
 
+
+
+# # select single townsmen for cleanup
+# def select_townsmen(townsmen, cleanup):
+#     pass
+#     finalTownsmen = []
+
+#     # populate heap
+#     for x in townsmen:
+#         townHeap.add(x)
+    
+#     # pop based on the desired size of cleanup
+
+#     # if there are less townsmen then available cleanups
+#     if len(townsmen)//len(townsmenEligibilty) == 0:
+
+
+
+#     return finalTownsmen
 
 
 # Implement min heap

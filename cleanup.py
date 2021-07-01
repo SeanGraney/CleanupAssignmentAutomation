@@ -35,6 +35,8 @@ SPREADSHEET_ID = "1SuAeUZZhKQ67_79u-bueBVqG_B94l6Dz7fGdkQq0m2o"
 
 sheet = client.open("Database").worksheet("Data")
 sheet1 = client.open("Database").worksheet("Number_Assigned")
+sheet2 = client.open("Assignments")
+
 dbData = sheet.get_all_records()
 naData = sheet1.get_all_records()
 
@@ -42,8 +44,7 @@ naData = sheet1.get_all_records()
 # convert the json to dataframe
 records_df = pd.DataFrame.from_dict(dbData)
 
-# view the top records
-print(records_df.head())
+
 
 ###################################################################################################################
 # Global Variables
@@ -63,9 +64,11 @@ townsmenEligibilty = {}
 
 
 def main():
+    # view the top records
+    print(records_df.head())
     read()
     heap()
-    # write()
+    write()
     end = time.time()
     print("Your Program took: " +str(end-start)+ " Seconds")    
 
@@ -83,20 +86,25 @@ def read():
 def heap():
     switch = False
     count = 0
+    length = len(cleanupProperties)
     # loops through all cleanups and creates cleanup list
-    while count<len(cleanupProperties):
+    while count<length:
         if cleanupProperties[count] == "Kitchen":
             switch = True
         if switch:
+            print(" ")
+            print(" ")
             cleanup = cleanupProperties[count]
+            print("" +str(cleanupProperties))
+            print("count " +str(count))
+            print("------------------------" +cleanup+ "-----------------------------")
             finalList = select_brothers(cleanup)
             update_local_db(cleanup, finalList)
             remove_names(finalList)
 
-            #####Testing####
+            ####Testing####
 
-            # print(cleanup)
-            # print("Assigned Cleanups" +str(finalList))
+            print("Assigned Cleanups" +str(finalList))
 
         count=count+1
 
@@ -151,7 +159,6 @@ def set_cleanups():
 def set_number_assigned():
     for x in range(len(naData)):
         numberAssigned[naData[x]['Cleanup']] = naData[x]["Number"]
-    print(naData)
 
 
 
@@ -271,7 +278,10 @@ def update_Db():
    
     # print('{0} cells updated.'.format(request.get("totalUpdatedCells"))) --- Testing
 
-    
+
+
+def update_Assignment_Sheet():
+    pass
 
 def update_local_db(cleanup, finalList):
     for x in finalList:
@@ -300,6 +310,8 @@ def remove_names(finalList):
 # Min Heap implementation and Sorting functions
 ###################################################################################################################
 
+
+
 def populate_final_list(cleanup, num, heap):
     ret = []
 
@@ -320,10 +332,10 @@ def populate_final_list(cleanup, num, heap):
 
     return ret
 
+
+
 #  cleanup assignments list
 def select_brothers(cleanup):
-    print(cleanup)
-    print(numberAssigned[cleanup])
     finalList = []
 
     inhouse = Min_Heap()
@@ -334,10 +346,13 @@ def select_brothers(cleanup):
     numHousemen = 0
     numTownsmen = 0
 
-
+    shuffledMasterDict = masterDict[cleanup]
+    random.shuffle(shuffledMasterDict)
    # adds all memberst of mutable tuple to the Heap
-    for x in masterDict[cleanup]: 
+    for x in shuffledMasterDict: 
         if personal_data("Deck", x[0]) == "T":
+            if townsmenEligibilty[cleanup] == "N":
+                continue
             outhouse.add(x)
         else:
             inhouse.add(x)
@@ -350,55 +365,20 @@ def select_brothers(cleanup):
             numTownsmen = len(housemen) // len(townsmenEligibilty)
     numHousemen = numberAssigned[cleanup]-numTownsmen
 
-    print("numHousemen " + str(numHousemen))
-    print("numTownsmen " +str(numTownsmen)) 
+    print("numHousemen: " + str(numHousemen))
+    print("numTownsmen: " +str(numTownsmen)) 
 
-
+    # creates list  inhouse brothers, townsmen for the cleanup and combines them
     housemen = populate_final_list(cleanup, numHousemen, inhouse)
     townsmen = populate_final_list(cleanup, numTownsmen, outhouse)
+    finalList = housemen + townsmen
 
-    print("Inhouse" +str(housemen))
-    print("Townsmen" +str(townsmen))
-    
-    # # get potential list of brothers for cleanup
-    # while True:
-    #     # populate array as long as their last cleanup wasn't the current
-    #     if cleanup == personal_data("Last", cleanSort.peek()[0]):
-    #         cleanSort.pop()
-    #         continue
-    #     # makes sure there is no more than one townsmen per cleanup and they can't be the only brother on that cleanup
-    #     if "T" == personal_data("Deck", cleanSort.peek()[0]):
-    #         townsmen = townsmen+1          
-    #         if numberAssigned[cleanup] == 1 or townsmen > 1 or cleanup == "Brojo/Brolo" or cleanup == "Study/Laundry":
-    #             cleanSort.pop()
-    #             continue
-    #     cleanupAssignments.append(cleanSort.pop())
-    #         # break loop if the list is the size of the desired cleanp size and all edge duplicates are accounted for
-    #     if (len(cleanupAssignments) >= numberAssigned[cleanup] and cleanupAssignments[-1][1] != cleanSort.peek()[1]): 
-    #         break
+    print("Inhouse: " +str(housemen))
+    print("Townsmen: " +str(townsmen))
+    print("FinalList: " + str(finalList))
 
-    # Make random selection
-    # return randomizer(numberAssigned[cleanup], cleanupAssignments, cleanup)
+    return finalList
 
-
-
-# # select single townsmen for cleanup
-# def select_townsmen(townsmen, cleanup):
-#     pass
-#     finalTownsmen = []
-
-#     # populate heap
-#     for x in townsmen:
-#         townHeap.add(x)
-    
-#     # pop based on the desired size of cleanup
-
-#     # if there are less townsmen then available cleanups
-#     if len(townsmen)//len(townsmenEligibilty) == 0:
-
-
-
-#     return finalTownsmen
 
 
 # Implement min heap
@@ -483,5 +463,6 @@ class Min_Heap:
 
     def __bool__(self):
         return len(self.data) > 0
+
 
 main()

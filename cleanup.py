@@ -64,7 +64,7 @@ townsmenEligibilty = {}
 
 def main():
     read()
-    # heap()
+    heap()
     # write()
     end = time.time()
     print("Your Program took: " +str(end-start)+ " Seconds")    
@@ -95,8 +95,8 @@ def heap():
 
             #####Testing####
 
-            print(cleanup)
-            print("Assigned Cleanups" +str(finalList))
+            # print(cleanup)
+            # print("Assigned Cleanups" +str(finalList))
 
         count=count+1
 
@@ -151,6 +151,7 @@ def set_cleanups():
 def set_number_assigned():
     for x in range(len(naData)):
         numberAssigned[naData[x]['Cleanup']] = naData[x]["Number"]
+    print(naData)
 
 
 
@@ -158,7 +159,6 @@ def set_number_assigned():
 def set_townsmen_elig():
     for x in range(len(naData)):
         townsmenEligibilty[naData[x]["Cleanup"]] = naData[x]["Townsmen Eligible"]
-    print(townsmenEligibilty)
 
 
 # pass cleanup and name and return val
@@ -184,10 +184,9 @@ def index_of(cleanup, name):
 
 
 # takes list of potential brothers for the cleanup and cuts off the unused brothers
-def randomizer(numberAssigned, pBrothersList):
+def randomizer(num, pBrothersList):
     distinct = -1
     bLength = len(pBrothersList)
-    offset = -1
 
     # find number of distinct values
     for x in range(bLength):
@@ -197,21 +196,20 @@ def randomizer(numberAssigned, pBrothersList):
             distinct = distinct + 1
 
     # if the list holds the perfect amount of brothers, return that list
-    if bLength == numberAssigned:
+    if bLength == num:
         return pBrothersList
 
     # if the list holds more than the perfect amount and all values are equal, 
-    # randomly remove loose ends, not the townsmen
-    elif (bLength > numberAssigned) and distinct == 1:
-        while len(pBrothersList) > numberAssigned:
+    # randomly remove loose ends
+    elif (bLength > num) and distinct == 1:
+        while len(pBrothersList) > num:
             rand = random.randint(0,len(pBrothersList)-1)
-            if personal_data("Deck", [pBrothersList[rand][1]]) != "T": 
-                del pBrothersList[rand]
+            del pBrothersList[rand]
         return pBrothersList
 
-    # otherwise, del values off the end, not the townsmen
+    # otherwise, del values off the end
     else:
-        while len(pBrothersList) > numberAssigned:
+        while len(pBrothersList) > num:
             del pBrothersList[-1]
         return pBrothersList
 
@@ -302,12 +300,31 @@ def remove_names(finalList):
 # Min Heap implementation and Sorting functions
 ###################################################################################################################
 
-def populate_heap(cleanup, partialList, heap):
-    pass
+def populate_final_list(cleanup, num, heap):
+    ret = []
+
+    while len(heap)>0:
+        # Removes brothers who were on that clenaup the previous week
+        if cleanup == personal_data("Last", heap.peek()[0]):
+            heap.pop()
+            continue
+
+        # adds brothers to new list
+        ret.append(heap.pop())
+
+        # break if the len is greater than desired number and the value is unique
+        if len(ret) >= num and ret[-1][1] == heap.peek()[1]:
+            break
+    
+    ret = randomizer(num, ret)
+
+    return ret
 
 #  cleanup assignments list
 def select_brothers(cleanup):
-    assigned = []
+    print(cleanup)
+    print(numberAssigned[cleanup])
+    finalList = []
 
     inhouse = Min_Heap()
     outhouse = Min_Heap()
@@ -321,42 +338,47 @@ def select_brothers(cleanup):
    # adds all memberst of mutable tuple to the Heap
     for x in masterDict[cleanup]: 
         if personal_data("Deck", x[0]) == "T":
-            townsmen.append(x)
+            outhouse.add(x)
         else:
-            housemen.append(x)
-    
+            inhouse.add(x)
 
     # decide how many townsmen and brothers for that cleanup
-
-    # 
-    if len(townsmen) > 0:
-        if len(townsmen) < len(townsmenEligibilty) - len(townsmenEligibilty[]):
+    if len(outhouse) > 0:
+        if len(outhouse) // len(townsmenEligibilty) == 0:
             numTownsmen = 1
         else:
-            numTownsmen = len(townsmen)%len(townsmenEligibilty)
-    
-    
+            numTownsmen = len(housemen) // len(townsmenEligibilty)
     numHousemen = numberAssigned[cleanup]-numTownsmen
 
-    # get potential list of brothers for cleanup
-    while True:
-        # populate array as long as their last cleanup wasn't the current
-        if cleanup == personal_data("Last", cleanSort.peek()[0]):
-            cleanSort.pop()
-            continue
-        # makes sure there is no more than one townsmen per cleanup and they can't be the only brother on that cleanup
-        if "T" == personal_data("Deck", cleanSort.peek()[0]):
-            townsmen = townsmen+1          
-            if numberAssigned[cleanup] == 1 or townsmen > 1 or cleanup == "Brojo/Brolo" or cleanup == "Study/Laundry":
-                cleanSort.pop()
-                continue
-        cleanupAssignments.append(cleanSort.pop())
-            # break loop if the list is the size of the desired cleanp size and all edge duplicates are accounted for
-        if (len(cleanupAssignments) >= numberAssigned[cleanup] and cleanupAssignments[-1][1] != cleanSort.peek()[1]): 
-            break
+    print("numHousemen " + str(numHousemen))
+    print("numTownsmen " +str(numTownsmen)) 
+
+
+    housemen = populate_final_list(cleanup, numHousemen, inhouse)
+    townsmen = populate_final_list(cleanup, numTownsmen, outhouse)
+
+    print("Inhouse" +str(housemen))
+    print("Townsmen" +str(townsmen))
+    
+    # # get potential list of brothers for cleanup
+    # while True:
+    #     # populate array as long as their last cleanup wasn't the current
+    #     if cleanup == personal_data("Last", cleanSort.peek()[0]):
+    #         cleanSort.pop()
+    #         continue
+    #     # makes sure there is no more than one townsmen per cleanup and they can't be the only brother on that cleanup
+    #     if "T" == personal_data("Deck", cleanSort.peek()[0]):
+    #         townsmen = townsmen+1          
+    #         if numberAssigned[cleanup] == 1 or townsmen > 1 or cleanup == "Brojo/Brolo" or cleanup == "Study/Laundry":
+    #             cleanSort.pop()
+    #             continue
+    #     cleanupAssignments.append(cleanSort.pop())
+    #         # break loop if the list is the size of the desired cleanp size and all edge duplicates are accounted for
+    #     if (len(cleanupAssignments) >= numberAssigned[cleanup] and cleanupAssignments[-1][1] != cleanSort.peek()[1]): 
+    #         break
 
     # Make random selection
-    return randomizer(numberAssigned[cleanup], cleanupAssignments, cleanup)
+    # return randomizer(numberAssigned[cleanup], cleanupAssignments, cleanup)
 
 
 

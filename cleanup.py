@@ -120,33 +120,7 @@ def heap():
 
 def write():
     update_Db()
-    # create_assignment_sheet()
-
-    # object of sheet to copy from
-    copy = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID1)
-
-    # object of sheet to paste to
-    paste = service.spreadsheets().get(spreadsheetId=ASSIGNMENTSHEET_ID)
-
-    body = {
-        "requests": [
-            {
-                "copyPaste": {
-                    "source": {"sheetId": 0},
-                    "destination": {"sheetId": ASSIGNMENTSHEET_ID},
-                    "pasteType": "PASTE_NORMAL",
-                    "pasteOrientation": "NORMAL"
-                    }
-            }
-        ]
-    }
-
-
-    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
-    response = request.execute()
-
-    # TODO: Change code below to process the `response` dict:
-    pprint(response)
+    create_assignment_sheet()
 
 
 
@@ -312,6 +286,8 @@ def update_Db():
 
 
 def create_assignment_sheet():
+
+    # add new sheet
     requests = [
         {
             "addSheet": {
@@ -337,6 +313,37 @@ def create_assignment_sheet():
 
     request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body).execute()        
     print(request)
+
+    newSheetId = request["replies"][0]["addSheet"]["properties"]["sheetId"]
+    print("")
+    print("New Sheet ID: " +str(newSheetId))
+
+    # copy formatting from base sheet to new sheet
+    body = {
+        "requests": [
+            {
+                "copyPaste": {
+                    "source": {"sheetId": 0},
+                    "destination": {"sheetId": newSheetId},
+                    "pasteType": "PASTE_NORMAL",
+                    "pasteOrientation": "NORMAL"
+                    },
+                # "updateSheetProperties": {
+                #     "properties": {
+                #         "gridProperties": {
+                #             "frozenRowCount": 1
+                #         }
+                    # }
+                # }
+            }
+        ]
+    }
+
+
+    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
+    response = request.execute()
+
+    # pprint(response)
 
 
 

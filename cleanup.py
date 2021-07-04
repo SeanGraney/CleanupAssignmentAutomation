@@ -31,14 +31,18 @@ scope = [
 credentials = ServiceAccountCredentials.from_json_keyfile_name(".keys\credentials.json", scope)
 client = gspread.authorize(credentials)
 service = discovery.build('sheets', 'v4', credentials=ServiceAccountCredentials.from_json_keyfile_name(".keys\credentials.json", scope))
+
 SPREADSHEET_ID = "1SuAeUZZhKQ67_79u-bueBVqG_B94l6Dz7fGdkQq0m2o"
+SPREADSHEET_ID1 = "1BRelsFAXI6h3lJrX9LnLx7ttOmZmsO8OEDJ53IgGEzk"
 
-sheet = client.open("Database").worksheet("Data")
-sheet1 = client.open("Database").worksheet("Number_Assigned")
-sheet2 = client.open("Assignments")
+ASSIGNMENTSHEET_ID = "1828663692"
 
-dbData = sheet.get_all_records()
-naData = sheet1.get_all_records()
+Database = client.open("Database").worksheet("Data")
+NumAssigned = client.open("Database").worksheet("Number_Assigned")
+Assignments = client.open("Assignments").worksheet("BLANK2")
+
+dbData = Database.get_all_records()
+naData = NumAssigned.get_all_records()
 
 
 # convert the json to dataframe
@@ -116,6 +120,33 @@ def heap():
 
 def write():
     update_Db()
+    # create_assignment_sheet()
+
+    # object of sheet to copy from
+    copy = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID1)
+
+    # object of sheet to paste to
+    paste = service.spreadsheets().get(spreadsheetId=ASSIGNMENTSHEET_ID)
+
+    body = {
+        "requests": [
+            {
+                "copyPaste": {
+                    "source": {"sheetId": 0},
+                    "destination": {"sheetId": ASSIGNMENTSHEET_ID},
+                    "pasteType": "PASTE_NORMAL",
+                    "pasteOrientation": "NORMAL"
+                    }
+            }
+        ]
+    }
+
+
+    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
+    response = request.execute()
+
+    # TODO: Change code below to process the `response` dict:
+    pprint(response)
 
 
 
@@ -280,8 +311,34 @@ def update_Db():
 
 
 
-def update_Assignment_Sheet():
-    pass
+def create_assignment_sheet():
+    requests = [
+        {
+            "addSheet": {
+                "properties": {
+                    "title": "Date",
+                    "gridProperties": {
+                        "rowCount": 124,
+                        "columnCount": 11
+                    },
+                    "tabColor": {
+                        "red": 1.0,
+                        "green": 0.3,
+                        "blue": 0.4
+                    }
+                }
+            }
+        }
+    ]
+
+    body = {
+        "requests": requests
+    }
+
+    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body).execute()        
+    print(request)
+
+
 
 def update_local_db(cleanup, finalList):
     for x in finalList:

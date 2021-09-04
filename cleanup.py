@@ -8,7 +8,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient import discovery
-from pprint import pprint
+from pprint import pprint   
 import time
 import random
 
@@ -39,7 +39,7 @@ ASSIGNMENTSHEET_ID = "1828663692"
 
 Database = client.open("Database").worksheet("Data")
 NumAssigned = client.open("Database").worksheet("Number_Assigned")
-Assignments = client.open("Assignments").worksheet("BLANK2")
+Assignments = client.open("Assignments").worksheet("Blank")
 
 dbData = Database.get_all_records()
 naData = NumAssigned.get_all_records()
@@ -69,7 +69,8 @@ townsmenEligibilty = {}
 
 def main():
     # view the top records
-    print(records_df.head())
+    # print(records_df.head())
+
     read()
     heap()
     write()
@@ -96,11 +97,14 @@ def heap():
         if cleanupProperties[count] == "Kitchen":
             switch = True
         if switch:
-            print(" ")
-            print(" ")
+            print("")
             cleanup = cleanupProperties[count]
-            print("" +str(cleanupProperties))
-            print("count " +str(count))
+
+            # Testing cleanup list
+            # print("" +str(cleanupProperties))
+            # print("count " +str(count))
+
+
             print("------------------------" +cleanup+ "-----------------------------")
             finalList = select_brothers(cleanup)
             update_local_db(cleanup, finalList)
@@ -109,6 +113,7 @@ def heap():
             ####Testing####
 
             print("Assigned Cleanups" +str(finalList))
+            print("")
 
         count=count+1
 
@@ -285,7 +290,7 @@ def update_Db():
 
 
 
-def create_assignment_sheet():
+def create_assignment_sheet(finalList, cleanup):
 
     # add new sheet
     requests = [
@@ -344,6 +349,15 @@ def create_assignment_sheet():
     response = request.execute()
 
     # pprint(response)
+    
+    start = 11
+    # get ranges
+    for x in numberAssigned:
+        if cleanup == x:
+            break
+        start = start + 8 + numberAssigned[x]
+
+    values = []
 
 
 
@@ -384,6 +398,14 @@ def populate_final_list(cleanup, num, heap):
         if cleanup == personal_data("Last", heap.peek()[0]):
             heap.pop()
             continue
+
+        # Brothers only cleanup their bathrooms respectively
+        if ((cleanup == "Bathroom 2") or (cleanup == "Bathroom 3")):
+            deck = str(personal_data("Deck", heap.peek()[0]))
+
+            if ((deck != cleanup[-1]) and (deck != "T")):
+                heap.pop()
+                continue
 
         # adds brothers to new list
         ret.append(heap.pop())
@@ -431,6 +453,7 @@ def select_brothers(cleanup):
 
     print("numHousemen: " + str(numHousemen))
     print("numTownsmen: " +str(numTownsmen)) 
+    print("")
 
     # creates list  inhouse brothers, townsmen for the cleanup and combines them
     housemen = populate_final_list(cleanup, numHousemen, inhouse)
@@ -439,7 +462,9 @@ def select_brothers(cleanup):
 
     print("Inhouse: " +str(housemen))
     print("Townsmen: " +str(townsmen))
-    print("FinalList: " + str(finalList))
+    print("")
+
+    # print("FinalList: " + str(finalList))
 
     return finalList
 

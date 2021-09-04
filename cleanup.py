@@ -10,6 +10,8 @@ from google.oauth2.credentials import Credentials
 from googleapiclient import discovery
 from pprint import pprint   
 import time
+from datetime import date
+import calendar
 import random
 
 start = time.time()
@@ -290,9 +292,24 @@ def update_Db():
 
 
 
-def create_assignment_sheet(finalList, cleanup):
+def find_next_sunday():
+    year = date.today().year
+    cal = calendar.TextCalendar(calendar.SUNDAY)
 
-    # add new sheet
+    for x in range(1,13):
+        for y in cal.itermonthdays(year,x):
+            if y != 0:
+                day = date(year,x,y)
+                if day.weekday()==6:
+                    print("%d-%d" % (x,y))
+
+
+
+def create_assignment_sheet():
+    # finds date of next sunday
+    find_next_sunday()
+
+    # duplicates new sheet
     requests = [
         {
             "addSheet": {
@@ -348,14 +365,14 @@ def create_assignment_sheet(finalList, cleanup):
     request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
     response = request.execute()
 
-    # pprint(response)
+    pprint(response)
     
-    start = 11
-    # get ranges
-    for x in numberAssigned:
-        if cleanup == x:
-            break
-        start = start + 8 + numberAssigned[x]
+    # start = 11
+    # # get ranges
+    # for x in numberAssigned:
+    #     if cleanup == x:
+    #         break
+    #     start = start + 8 + numberAssigned[x]
 
     values = []
 

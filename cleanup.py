@@ -291,30 +291,52 @@ def update_Db():
     # print('{0} cells updated.'.format(request.get("totalUpdatedCells"))) --- Testing
 
 
-
+# Find the date of the upcoming sunday for the title of the next assignments sheet
 def find_next_sunday():
     year = date.today().year
+    day = date.today().day
+    month = date.today().month
     cal = calendar.TextCalendar(calendar.SUNDAY)
+    sundays = []
+    upcomingMonth = 0
+    upcomingDay = 0
 
+    # add all sunday dates of the current year to the array
     for x in range(1,13):
         for y in cal.itermonthdays(year,x):
             if y != 0:
-                day = date(year,x,y)
-                if day.weekday()==6:
-                    print("%d-%d" % (x,y))
+                days = date(year,x,y)
+                if days.weekday()==6:
+                    sun = (str(x) +"-"+str(y))
+                    sundays.append(sun)
+
+    # find the sunday that follows the current date
+    for x in sundays:
+        if int(x[0]) < month:
+            continue
+        if int(x[2]) < day:
+            continue
+        else:
+            upcomingMonth = int(x[0])
+            upcomingDay = int(x[2])
+
+    ret = (str(upcomingMonth)+"/"+str(upcomingDay))
+    return ret
+
+
 
 
 
 def create_assignment_sheet():
     # finds date of next sunday
-    find_next_sunday()
+    nextSun = find_next_sunday()
 
     # duplicates new sheet
     requests = [
         {
             "addSheet": {
                 "properties": {
-                    "title": "Date",
+                    "title": nextSun,
                     "gridProperties": {
                         "rowCount": 124,
                         "columnCount": 11

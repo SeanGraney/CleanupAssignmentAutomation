@@ -270,7 +270,7 @@ def update_Db():
             tempList.append(y[1])
         values.append(tempList)
 
-
+    print(values)
     # set data range
     data = [
         {
@@ -389,14 +389,46 @@ def create_assignment_sheet():
 
     pprint(response)
     
-    # start = 11
-    # # get ranges
-    # for x in numberAssigned:
-    #     if cleanup == x:
-    #         break
-    #     start = start + 8 + numberAssigned[x]
+    # get ranges for assignment sheet
+    ranges = []
+    
+    start = 2
+    end = 0
 
-    values = []
+    for x in numberAssigned.items():
+        start = start + 9
+        end = start + int(x[1])-1
+
+        ranges.append("J"+str(start)+":J"+str(end))
+        
+        start = end
+    
+    print(ranges)
+
+
+
+    # update assignment sheet with correct names
+    cell_range_insert = "B11"
+    # values to be added to sheet
+    
+    vals = (
+        ("JAKE", "joe"), 
+        ("jay", "chris", "da man"),
+    )
+    value_range_body = {
+        'majorDimension': 'COLUMNS',
+        'values': vals
+    }
+
+    service.spreadsheets().values().update(
+        spreadsheetId= SPREADSHEET_ID1,
+        valueInputOption= 'USER_ENTERED',
+        range=nextSun +"!"+ cell_range_insert,
+        body=value_range_body
+    ).execute()
+
+  
+
 
 
 

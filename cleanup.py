@@ -1,5 +1,6 @@
 from __future__ import print_function
 import gspread
+import math
 import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
 import os.path
@@ -62,6 +63,8 @@ masterDict = {}
 staticDict = {}
 numberAssigned = {}
 townsmenEligibilty = {}
+townsmenNums = {}
+finalCleanupAssignments = {}
 
 ###################################################################################################################
 # Main FunctionsS
@@ -87,6 +90,7 @@ def read():
     set_master_dict()
     set_number_assigned()
     set_townsmen_elig()
+    set_townsmen_nums()
 
 
 
@@ -112,21 +116,26 @@ def heap():
             update_local_db(cleanup, finalList)
             remove_names(finalList)
 
+            # make list of names for each assigned cleanup to print to assignments page
+            tempList = []
+            for x in finalList:
+                tempList.append(x[0])
+
+            finalCleanupAssignments[cleanup]=tempList
+    
             ####Testing####
 
             print("Assigned Cleanups: " +str(finalList))
             print("")
 
         count=count+1
-
        
-
-
 
 
 
 def write():
     update_Db()
+    captainSelect()
     create_assignment_sheet()
 
 
@@ -178,6 +187,13 @@ def set_number_assigned():
 def set_townsmen_elig():
     for x in range(len(naData)):
         townsmenEligibilty[naData[x]["Cleanup"]] = naData[x]["Townsmen Eligible"]
+
+
+
+def set_townsmen_nums():
+    for x in range(len(naData)):
+        townsmenNums[naData[x]["Cleanup"]] = naData[x]["Number Of Townsmen"]
+
 
 
 # pass cleanup and name and return val
@@ -236,19 +252,16 @@ def randomizer(num, pBrothersList):
 
 # randomly selects a captain from the list, if there is no elegable brother
 # the first brother in the list is captain
-def captainSelect(finalList):
-    # loops 5 times to in case a bad captain is selected
-    for x in range(5):
-        randidx = random.randint(0, len(finalList)-1)
-        tempIdx = 0
-        # Checks to see if a brother is eligble for the captain role
-        for y in range(len(masterDict["Captain"])):
-            if ((masterDict["Captain"][y][0] == finalList[randidx][0]) 
-            and 
-            (masterDict["Captain"][y][1]=="Y")):
-                return randidx
-    # If no selected brother is eligable then the first/only brother is selected
-    return 0
+def captainSelect():
+    for x in numberAssigned.keys():
+        names = finalCleanupAssignments[x]
+        if numberAssigned[x]>2:
+            random.shuffle(names)
+            while personal_data('Captain', names[0]) != "Y":
+                random.shuffle(names)
+        names[0] = "**"+names[0]+"**"
+
+
 
 
 
@@ -320,6 +333,43 @@ def find_next_sunday():
     return ret
 
 
+# get cell range to be updated in assignment sheet
+def assignment_sheet_ranges():
+    ranges = {}
+    start = 2
+    end = 0
+    
+    for x in numberAssigned.items():
+        start = start + 9
+        end = start + int(x[1])-1
+        ranges[x[0]]=("B"+str(start)+":B"+str(end))
+        start = end
+
+    return ranges
+
+
+
+
+# update assignment sheet with correct names
+def update_assignment_sheet(cellRange, nextSun, namesAssigned):
+
+    cell_range_insert = cellRange
+    # values to be added to sheet
+    vals = (
+        namesAssigned,
+    )
+    value_range_body = {
+        'majorDimension': 'COLUMNS',
+        'values': vals
+    }
+
+    # google api request
+    service.spreadsheets().values().update(
+        spreadsheetId= SPREADSHEET_ID1,
+        valueInputOption= 'USER_ENTERED',
+        range=nextSun +"!"+ cell_range_insert,
+        body=value_range_body
+    ).execute()
 
 
 
@@ -380,45 +430,13 @@ def create_assignment_sheet():
     request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
     response = request.execute()
     
+
     # get ranges for assignment sheet
-    ranges = []
-    
-    start = 2
-    end = 0
+    ranges = assignment_sheet_ranges()
 
-    for x in numberAssigned.items():
-        start = start + 9
-        end = start + int(x[1])-1
-
-        ranges.append("B"+str(start)+":B"+str(end))
-        
-        start = end
-    
-
-
-
-    # update assignment sheet with correct names
-    cell_range_insert = "B11"
-    # values to be added to sheet
-    
-    vals = (
-        ("JAKE", "joe"), 
-        ("jay", "chris", "da man"),
-    )
-    value_range_body = {
-        'majorDimension': 'COLUMNS',
-        'values': vals
-    }
-
-    service.spreadsheets().values().update(
-        spreadsheetId= SPREADSHEET_ID1,
-        valueInputOption= 'USER_ENTERED',
-        range=nextSun +"!"+ cell_range_insert,
-        body=value_range_body
-    ).execute()
-
-  
-
+    # update assignment sheet cells for each cleanup
+    for x in numberAssigned.keys():
+        update_assignment_sheet(ranges[x], nextSun, tuple(finalCleanupAssignments[x]))
 
 
 
@@ -495,7 +513,7 @@ def select_brothers(cleanup):
 
     shuffledMasterDict = masterDict[cleanup]
     random.shuffle(shuffledMasterDict)
-   # adds all memberst of mutable tuple to the Heap
+   # adds all members of mutable tuple to the Heap
     for x in shuffledMasterDict: 
         if personal_data("Deck", x[0]) == "T":
             if townsmenEligibilty[cleanup] == "N":
@@ -504,12 +522,12 @@ def select_brothers(cleanup):
         else:
             inhouse.add(x)
 
-    # decide how many townsmen and brothers for that cleanup
+    # decide how many townsmen and inhouse for that cleanup
     if len(outhouse) > 0:
-        if len(outhouse) // len(townsmenEligibilty) == 0:
-            numTownsmen = 1
-        else:
-            numTownsmen = len(housemen) // len(townsmenEligibilty)
+        print("length of townsmen " + str(len(outhouse)))
+        print("length of townsmenElig " +str(len(townsmenEligibilty)))
+        print("length of inhouse bros " +str(len(inhouse)))
+        numTownsmen = townsmenNums[cleanup]
     numHousemen = numberAssigned[cleanup]-numTownsmen
 
     print("numHousemen: " + str(numHousemen))

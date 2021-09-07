@@ -114,7 +114,7 @@ def heap():
 
             ####Testing####
 
-            print("Assigned Cleanups" +str(finalList))
+            print("Assigned Cleanups: " +str(finalList))
             print("")
 
         count=count+1
@@ -270,7 +270,6 @@ def update_Db():
             tempList.append(y[1])
         values.append(tempList)
 
-    print(values)
     # set data range
     data = [
         {
@@ -307,18 +306,15 @@ def find_next_sunday():
             if y != 0:
                 days = date(year,x,y)
                 if days.weekday()==6:
-                    sun = (str(x) +"-"+str(y))
+                    sun = [x, y]
                     sundays.append(sun)
 
     # find the sunday that follows the current date
     for x in sundays:
-        if int(x[0]) < month:
-            continue
-        if int(x[2]) < day:
-            continue
-        else:
-            upcomingMonth = int(x[0])
-            upcomingDay = int(x[2])
+        if ((x[0] >= month) and (x[1] >= day)):
+            upcomingMonth = x[0]
+            upcomingDay = x[1]
+            break
 
     ret = (str(upcomingMonth)+"/"+str(upcomingDay))
     return ret
@@ -343,8 +339,8 @@ def create_assignment_sheet():
                     },
                     "tabColor": {
                         "red": 1.0,
-                        "green": 0.3,
-                        "blue": 0.4
+                        "green": 0.5,
+                        "blue": 0.8
                     }
                 }
             }
@@ -355,12 +351,9 @@ def create_assignment_sheet():
         "requests": requests
     }
 
-    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body).execute()        
-    print(request)
+    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body).execute()      
 
     newSheetId = request["replies"][0]["addSheet"]["properties"]["sheetId"]
-    print("")
-    print("New Sheet ID: " +str(newSheetId))
 
     # copy formatting from base sheet to new sheet
     body = {
@@ -386,8 +379,6 @@ def create_assignment_sheet():
 
     request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID1, body=body)
     response = request.execute()
-
-    pprint(response)
     
     # get ranges for assignment sheet
     ranges = []
@@ -399,11 +390,10 @@ def create_assignment_sheet():
         start = start + 9
         end = start + int(x[1])-1
 
-        ranges.append("J"+str(start)+":J"+str(end))
+        ranges.append("B"+str(start)+":B"+str(end))
         
         start = end
     
-    print(ranges)
 
 
 

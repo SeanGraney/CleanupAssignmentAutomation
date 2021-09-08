@@ -524,9 +524,6 @@ def select_brothers(cleanup):
 
     # decide how many townsmen and inhouse for that cleanup
     if len(outhouse) > 0:
-        print("length of townsmen " + str(len(outhouse)))
-        print("length of townsmenElig " +str(len(townsmenEligibilty)))
-        print("length of inhouse bros " +str(len(inhouse)))
         numTownsmen = townsmenNums[cleanup]
     numHousemen = numberAssigned[cleanup]-numTownsmen
 
